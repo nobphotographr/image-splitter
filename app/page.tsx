@@ -6,6 +6,7 @@ export default function Home() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [splitImages, setSplitImages] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [imageType, setImageType] = useState<string>("image/png");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = (file: File) => {
@@ -14,19 +15,21 @@ export default function Home() {
       return;
     }
 
+    setImageType(file.type);
+
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
         setSelectedImage(e.target?.result as string);
-        splitImageIntoFour(img);
+        splitImageIntoFour(img, file.type);
       };
       img.src = e.target?.result as string;
     };
     reader.readAsDataURL(file);
   };
 
-  const splitImageIntoFour = (img: HTMLImageElement) => {
+  const splitImageIntoFour = (img: HTMLImageElement, mimeType: string) => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
@@ -53,7 +56,12 @@ export default function Home() {
         quarterHeight
       );
 
-      splits.push(canvas.toDataURL("image/png"));
+      // 元の画像形式を保持、JPEGの場合は最高品質
+      if (mimeType === "image/jpeg" || mimeType === "image/jpg") {
+        splits.push(canvas.toDataURL("image/jpeg", 1.0));
+      } else {
+        splits.push(canvas.toDataURL(mimeType));
+      }
     }
 
     setSplitImages(splits);
@@ -71,12 +79,24 @@ export default function Home() {
     return new Blob([u8arr], { type: mime });
   };
 
+  const getFileExtension = () => {
+    if (imageType === "image/jpeg" || imageType === "image/jpg") {
+      return "jpg";
+    } else if (imageType === "image/png") {
+      return "png";
+    } else if (imageType === "image/webp") {
+      return "webp";
+    }
+    return "png";
+  };
+
   const shareImage = async (dataUrl: string, index: number) => {
     if (navigator.share && navigator.canShare) {
       try {
         const blob = dataURLtoBlob(dataUrl);
-        const file = new File([blob], `split-${index + 1}.png`, {
-          type: "image/png",
+        const ext = getFileExtension();
+        const file = new File([blob], `split-${index + 1}.${ext}`, {
+          type: imageType,
         });
 
         if (navigator.canShare({ files: [file] })) {
@@ -99,22 +119,10 @@ export default function Home() {
 
   const downloadImage = (dataUrl: string, index: number) => {
     const link = document.createElement("a");
-    link.download = `split-${index + 1}.png`;
+    const ext = getFileExtension();
+    link.download = `split-${index + 1}.${ext}`;
     link.href = dataUrl;
     link.click();
-  };
-
-  const shareAll = async () => {
-    for (let i = 0; i < splitImages.length; i++) {
-      await shareImage(splitImages[i], i);
-      await new Promise((resolve) => setTimeout(resolve, 300));
-    }
-  };
-
-  const downloadAll = () => {
-    splitImages.forEach((img, index) => {
-      setTimeout(() => downloadImage(img, index), index * 100);
-    });
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -136,6 +144,7 @@ export default function Home() {
   const reset = () => {
     setSelectedImage(null);
     setSplitImages([]);
+    setImageType("image/png");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -231,7 +240,12 @@ export default function Home() {
 
             <div className="flex gap-3">
               <button
-                onClick={shareAll}
+                onClick={async () => {
+                  for (let i = 0; i < splitImages.length; i++) {
+                    downloadImage(splitImages[i], i);
+                    await new Promise((resolve) => setTimeout(resolve, 100));
+                  }
+                }}
                 className="flex-1 bg-gray-900 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 text-white py-3 px-6 rounded font-medium transition-colors"
               >
                 全て保存
@@ -249,13 +263,16 @@ export default function Home() {
                 iPhoneで写真アプリに保存する方法
               </h3>
               <ol className="text-sm text-blue-800 dark:text-blue-300 space-y-2">
-                <li>1. 「保存」ボタンをタップ</li>
+                <li>1. 各画像の「保存」ボタンを1枚ずつタップ</li>
                 <li>2. シェアシート（共有メニュー）が表示される</li>
                 <li>3. 「画像を保存」または「"写真"に追加」をタップ</li>
                 <li>4. 写真アプリに保存されます</li>
               </ol>
               <p className="text-xs text-blue-700 dark:text-blue-400 mt-3">
-                ※PCやAndroidでは自動的にダウンロードされます
+                ※iPhoneでは「全て保存」は使えません。1枚ずつ保存してください
+              </p>
+              <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
+                ※PCやAndroidでは「全て保存」で一括ダウンロードできます
               </p>
             </div>
           </div>
