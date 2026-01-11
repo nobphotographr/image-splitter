@@ -95,12 +95,12 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 py-12 px-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-16 px-4">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-2 text-gray-800 dark:text-white">
+        <h1 className="text-3xl font-bold text-center mb-2 text-gray-900 dark:text-white">
           画像4分割ツール
         </h1>
-        <p className="text-center text-gray-600 dark:text-gray-300 mb-8">
+        <p className="text-center text-gray-600 dark:text-gray-400 mb-12">
           X（Twitter）の縦長投稿用に画像を4分割します
         </p>
 
@@ -109,15 +109,15 @@ export default function Home() {
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
-            className={`border-4 border-dashed rounded-2xl p-16 text-center transition-all ${
+            className={`border-2 border-dashed rounded-lg p-20 text-center transition-all ${
               isDragging
-                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                : "border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+                ? "border-gray-400 bg-gray-100 dark:bg-gray-800"
+                : "border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800"
             }`}
           >
             <div className="space-y-4">
               <svg
-                className="mx-auto h-16 w-16 text-gray-400"
+                className="mx-auto h-12 w-12 text-gray-400"
                 stroke="currentColor"
                 fill="none"
                 viewBox="0 0 48 48"
@@ -132,11 +132,11 @@ export default function Home() {
               <div>
                 <label
                   htmlFor="file-upload"
-                  className="cursor-pointer text-blue-600 hover:text-blue-700 dark:text-blue-400 font-semibold"
+                  className="cursor-pointer text-gray-900 hover:text-gray-700 dark:text-gray-200 dark:hover:text-gray-300 font-medium underline decoration-gray-300 underline-offset-2"
                 >
                   ファイルを選択
                 </label>
-                <span className="text-gray-500 dark:text-gray-400">
+                <span className="text-gray-600 dark:text-gray-400">
                   {" "}
                   またはドラッグ&ドロップ
                 </span>
@@ -152,21 +152,21 @@ export default function Home() {
                   }}
                 />
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-gray-500 dark:text-gray-500">
                 PNG, JPG, GIF など
               </p>
             </div>
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-              <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-sm border border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">
                 分割結果（上から順番）
               </h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {splitImages.map((img, index) => (
-                  <div key={index} className="space-y-2">
-                    <div className="relative aspect-square bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+                  <div key={index} className="space-y-3">
+                    <div className="relative aspect-square bg-gray-100 dark:bg-gray-700 rounded overflow-hidden border border-gray-200 dark:border-gray-600">
                       <img
                         src={img}
                         alt={`分割 ${index + 1}`}
@@ -175,7 +175,7 @@ export default function Home() {
                     </div>
                     <button
                       onClick={() => downloadImage(img, index)}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors"
+                      className="w-full bg-gray-900 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 text-white py-2 px-4 rounded text-sm font-medium transition-colors"
                     >
                       {index + 1}枚目をDL
                     </button>
@@ -184,16 +184,16 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex gap-3">
               <button
                 onClick={downloadAll}
-                className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-xl font-semibold text-lg transition-colors shadow-lg"
+                className="flex-1 bg-gray-900 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 text-white py-3 px-6 rounded font-medium transition-colors"
               >
                 全てダウンロード
               </button>
               <button
                 onClick={reset}
-                className="bg-gray-500 hover:bg-gray-600 text-white py-3 px-6 rounded-xl font-semibold text-lg transition-colors shadow-lg"
+                className="bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-200 py-3 px-6 rounded font-medium transition-colors border border-gray-300 dark:border-gray-600"
               >
                 リセット
               </button>
@@ -201,7 +201,7 @@ export default function Home() {
           </div>
         )}
 
-        <footer className="mt-12 text-center text-gray-600 dark:text-gray-400 text-sm">
+        <footer className="mt-16 text-center text-gray-500 dark:text-gray-500 text-sm">
           <p>
             データはブラウザ上でのみ処理され、サーバーには保存されません
           </p>
