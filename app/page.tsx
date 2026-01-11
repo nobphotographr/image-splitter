@@ -59,11 +59,56 @@ export default function Home() {
     setSplitImages(splits);
   };
 
+  const dataURLtoBlob = (dataUrl: string): Blob => {
+    const arr = dataUrl.split(",");
+    const mime = arr[0].match(/:(.*?);/)?.[1] || "image/png";
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new Blob([u8arr], { type: mime });
+  };
+
+  const shareImage = async (dataUrl: string, index: number) => {
+    if (navigator.share && navigator.canShare) {
+      try {
+        const blob = dataURLtoBlob(dataUrl);
+        const file = new File([blob], `split-${index + 1}.png`, {
+          type: "image/png",
+        });
+
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: `分割画像 ${index + 1}`,
+          });
+        } else {
+          downloadImage(dataUrl, index);
+        }
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          downloadImage(dataUrl, index);
+        }
+      }
+    } else {
+      downloadImage(dataUrl, index);
+    }
+  };
+
   const downloadImage = (dataUrl: string, index: number) => {
     const link = document.createElement("a");
     link.download = `split-${index + 1}.png`;
     link.href = dataUrl;
     link.click();
+  };
+
+  const shareAll = async () => {
+    for (let i = 0; i < splitImages.length; i++) {
+      await shareImage(splitImages[i], i);
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    }
   };
 
   const downloadAll = () => {
@@ -153,7 +198,7 @@ export default function Home() {
                 />
               </div>
               <p className="text-sm text-gray-500 dark:text-gray-500">
-                PNG, JPG, GIF など
+                PNG, JPG など
               </p>
             </div>
           </div>
@@ -174,10 +219,10 @@ export default function Home() {
                       />
                     </div>
                     <button
-                      onClick={() => downloadImage(img, index)}
+                      onClick={() => shareImage(img, index)}
                       className="w-full bg-gray-900 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 text-white py-2 px-4 rounded text-sm font-medium transition-colors"
                     >
-                      {index + 1}枚目をDL
+                      {index + 1}枚目を保存
                     </button>
                   </div>
                 ))}
@@ -186,10 +231,10 @@ export default function Home() {
 
             <div className="flex gap-3">
               <button
-                onClick={downloadAll}
+                onClick={shareAll}
                 className="flex-1 bg-gray-900 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 text-white py-3 px-6 rounded font-medium transition-colors"
               >
-                全てダウンロード
+                全て保存
               </button>
               <button
                 onClick={reset}
@@ -197,6 +242,21 @@ export default function Home() {
               >
                 リセット
               </button>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
+              <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-3">
+                iPhoneで写真アプリに保存する方法
+              </h3>
+              <ol className="text-sm text-blue-800 dark:text-blue-300 space-y-2">
+                <li>1. 「保存」ボタンをタップ</li>
+                <li>2. シェアシート（共有メニュー）が表示される</li>
+                <li>3. 「画像を保存」または「"写真"に追加」をタップ</li>
+                <li>4. 写真アプリに保存されます</li>
+              </ol>
+              <p className="text-xs text-blue-700 dark:text-blue-400 mt-3">
+                ※PCやAndroidでは自動的にダウンロードされます
+              </p>
             </div>
           </div>
         )}
