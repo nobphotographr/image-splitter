@@ -56,7 +56,6 @@ export default function Home() {
         quarterHeight
       );
 
-      // 元の画像形式を保持、JPEGの場合は最高品質
       if (mimeType === "image/jpeg" || mimeType === "image/jpg") {
         splits.push(canvas.toDataURL("image/jpeg", 1.0));
       } else {
@@ -149,51 +148,50 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-16 px-4">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-2 text-gray-900 dark:text-white">
-          画像4分割ツール
-        </h1>
-        <p className="text-center text-gray-600 dark:text-gray-400 mb-12">
-          X（Twitter）の縦長投稿用に画像を4分割します
-        </p>
+    <div className="min-h-screen bg-[var(--bg)] py-24 px-6">
+      <div className="max-w-3xl mx-auto">
+        <header className="mb-16">
+          <h1 className="text-4xl font-semibold tracking-tight text-[var(--text)]">
+            画像4分割ツール
+          </h1>
+          <p className="mt-4 text-[var(--text-muted)]">
+            X（Twitter）の縦長投稿用に画像を4分割します
+          </p>
+        </header>
 
         {!selectedImage ? (
           <div
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
-            className={`border-2 border-dashed rounded-lg p-20 text-center transition-all ${
+            className={`border border-dashed p-24 text-center transition-colors ${
               isDragging
-                ? "border-gray-400 bg-gray-100 dark:bg-gray-800"
-                : "border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800"
+                ? "border-[var(--text)] bg-[var(--bg-subtle)]"
+                : "border-[var(--border)]"
             }`}
           >
             <div className="space-y-4">
               <svg
-                className="mx-auto h-12 w-12 text-gray-400"
+                className="mx-auto h-12 w-12 text-[var(--text-muted)]"
                 stroke="currentColor"
                 fill="none"
                 viewBox="0 0 48 48"
               >
                 <path
                   d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                  strokeWidth={2}
+                  strokeWidth={1.5}
                   strokeLinecap="round"
                   strokeLinejoin="round"
                 />
               </svg>
-              <div>
+              <div className="text-[var(--text-muted)]">
                 <label
                   htmlFor="file-upload"
-                  className="cursor-pointer text-gray-900 hover:text-gray-700 dark:text-gray-200 dark:hover:text-gray-300 font-medium underline decoration-gray-300 underline-offset-2"
+                  className="cursor-pointer text-[var(--text)] underline underline-offset-4 decoration-[var(--border)] hover:decoration-[var(--text)]"
                 >
                   ファイルを選択
                 </label>
-                <span className="text-gray-600 dark:text-gray-400">
-                  {" "}
-                  またはドラッグ&ドロップ
-                </span>
+                <span> またはドラッグ&ドロップ</span>
                 <input
                   ref={fileInputRef}
                   id="file-upload"
@@ -206,21 +204,22 @@ export default function Home() {
                   }}
                 />
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-500">
-                PNG, JPG など
-              </p>
+              <p className="text-sm text-[var(--text-muted)]">PNG, JPG など</p>
             </div>
           </div>
         ) : (
-          <div className="space-y-6">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-sm border border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-semibold mb-6 text-gray-900 dark:text-white">
-                分割結果（上から順番）
+          <div className="space-y-16">
+            <section>
+              <h2 className="text-xl font-medium text-[var(--text)] mb-8">
+                分割結果
               </h2>
+              <p className="text-sm text-[var(--text-muted)] mb-6">
+                上から順番に投稿してください
+              </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {splitImages.map((img, index) => (
                   <div key={index} className="space-y-3">
-                    <div className="relative aspect-square bg-gray-100 dark:bg-gray-700 rounded overflow-hidden border border-gray-200 dark:border-gray-600">
+                    <div className="relative aspect-square border border-[var(--border)] overflow-hidden">
                       <img
                         src={img}
                         alt={`分割 ${index + 1}`}
@@ -229,16 +228,16 @@ export default function Home() {
                     </div>
                     <button
                       onClick={() => shareImage(img, index)}
-                      className="w-full bg-gray-900 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 text-white py-2 px-4 rounded text-sm font-medium transition-colors"
+                      className="w-full bg-[var(--text)] text-[var(--bg)] py-2 px-4 text-sm font-medium hover:opacity-80 transition-opacity"
                     >
                       {index + 1}枚目を保存
                     </button>
                   </div>
                 ))}
               </div>
-            </div>
+            </section>
 
-            <div className="flex gap-3">
+            <div className="flex gap-4">
               <button
                 onClick={async () => {
                   for (let i = 0; i < splitImages.length; i++) {
@@ -246,40 +245,38 @@ export default function Home() {
                     await new Promise((resolve) => setTimeout(resolve, 100));
                   }
                 }}
-                className="flex-1 bg-gray-900 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 text-white py-3 px-6 rounded font-medium transition-colors"
+                className="flex-1 bg-[var(--text)] text-[var(--bg)] py-3 px-6 font-medium hover:opacity-80 transition-opacity"
               >
                 全て保存
               </button>
               <button
                 onClick={reset}
-                className="bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-200 py-3 px-6 rounded font-medium transition-colors border border-gray-300 dark:border-gray-600"
+                className="border border-[var(--border)] text-[var(--text)] py-3 px-6 font-medium hover:bg-[var(--bg-subtle)] transition-colors"
               >
                 リセット
               </button>
             </div>
 
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
-              <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-3">
+            <section className="border-t border-[var(--border)] pt-12">
+              <h3 className="text-sm font-medium text-[var(--text)] mb-4">
                 iPhoneで写真アプリに保存する方法
               </h3>
-              <ol className="text-sm text-blue-800 dark:text-blue-300 space-y-2">
+              <ol className="text-sm text-[var(--text-muted)] space-y-2">
                 <li>1. 各画像の「保存」ボタンを1枚ずつタップ</li>
                 <li>2. シェアシート（共有メニュー）が表示される</li>
                 <li>3. 「画像を保存」または「"写真"に追加」をタップ</li>
                 <li>4. 写真アプリに保存されます</li>
               </ol>
-              <p className="text-xs text-blue-700 dark:text-blue-400 mt-3">
-                ※iPhoneでは「全て保存」は使えません。1枚ずつ保存してください
+              <p className="text-xs text-[var(--text-muted)] mt-4">
+                iPhoneでは「全て保存」は使えません。1枚ずつ保存してください。
+                PCやAndroidでは「全て保存」で一括ダウンロードできます。
               </p>
-              <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
-                ※PCやAndroidでは「全て保存」で一括ダウンロードできます
-              </p>
-            </div>
+            </section>
           </div>
         )}
 
-        <footer className="mt-16 text-center text-gray-500 dark:text-gray-500 text-sm">
-          <p>
+        <footer className="mt-24 pt-8 border-t border-[var(--border)]">
+          <p className="text-sm text-[var(--text-muted)]">
             データはブラウザ上でのみ処理され、サーバーには保存されません
           </p>
         </footer>
