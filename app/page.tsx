@@ -237,7 +237,13 @@ export default function Home() {
               </div>
             </section>
 
-            <div className="flex gap-4">
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={reset}
+                className="border border-[var(--border)] text-[var(--text)] py-2 px-4 text-sm font-medium hover:bg-[var(--bg-subtle)] transition-colors"
+              >
+                リセット
+              </button>
               <button
                 onClick={async () => {
                   for (let i = 0; i < splitImages.length; i++) {
@@ -245,15 +251,9 @@ export default function Home() {
                     await new Promise((resolve) => setTimeout(resolve, 100));
                   }
                 }}
-                className="flex-1 bg-[var(--text)] text-[var(--bg)] py-3 px-6 font-medium hover:opacity-80 transition-opacity"
+                className="bg-[var(--text)] text-[var(--bg)] py-2 px-4 text-sm font-medium hover:opacity-80 transition-opacity"
               >
                 全て保存
-              </button>
-              <button
-                onClick={reset}
-                className="border border-[var(--border)] text-[var(--text)] py-3 px-6 font-medium hover:bg-[var(--bg-subtle)] transition-colors"
-              >
-                リセット
               </button>
             </div>
 
