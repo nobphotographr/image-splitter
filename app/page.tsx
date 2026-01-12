@@ -151,10 +151,17 @@ export default function Home() {
     <div className="min-h-screen bg-[var(--bg)] py-24 px-6">
       <div className="max-w-3xl mx-auto">
         <header className="mb-16">
-          <h1 className="text-4xl font-semibold tracking-tight text-[var(--text)]">
-            画像4分割ツール
-          </h1>
-          <p className="mt-4 text-[var(--text-muted)]">
+          <div className="flex items-center gap-4 mb-4">
+            <img
+              src="/logo.png"
+              alt=""
+              className="w-10 h-10"
+            />
+            <h1 className="text-4xl font-semibold tracking-tight text-[var(--text)]">
+              画像4分割ツール
+            </h1>
+          </div>
+          <p className="text-[var(--text-muted)]">
             X（Twitter）の縦長投稿用に画像を4分割します
           </p>
         </header>
