@@ -1,12 +1,32 @@
 "use client";
 
-import { useState, useRef } from "react";
+/* eslint-disable @next/next/no-img-element -- previews are client-generated data URLs */
+
+import { useCallback, useEffect, useRef, useState } from "react";
+
+type SplitMode = "vertical" | "carousel";
+type AspectPreset = "3:4" | "4:5";
+type SplitCount = 3 | 4;
+
+const getOutputMimeType = (mimeType: string) => {
+  if (mimeType === "image/jpeg" || mimeType === "image/jpg") {
+    return "image/jpeg";
+  }
+  if (mimeType === "image/webp") {
+    return "image/webp";
+  }
+  return "image/png";
+};
 
 export default function Home() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [splitImages, setSplitImages] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [imageType, setImageType] = useState<string>("image/png");
+  const [splitMode, setSplitMode] = useState<SplitMode>("carousel");
+  const [splitCount, setSplitCount] = useState<SplitCount>(4);
+  const [aspectPreset, setAspectPreset] = useState<AspectPreset>("3:4");
+  const [focusY, setFocusY] = useState(50);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = (file: File) => {
@@ -19,52 +39,94 @@ export default function Home() {
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        setSelectedImage(e.target?.result as string);
-        splitImageIntoFour(img, file.type);
-      };
-      img.src = e.target?.result as string;
+      setSelectedImage(e.target?.result as string);
     };
     reader.readAsDataURL(file);
   };
 
-  const splitImageIntoFour = (img: HTMLImageElement, mimeType: string) => {
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+  const splitImage = useCallback(
+    (img: HTMLImageElement, mimeType: string, mode: SplitMode) => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
-    const width = img.width;
-    const height = img.height;
-    const quarterHeight = height / 4;
+      const width = img.width;
+      const height = img.height;
+      const outputMimeType = getOutputMimeType(mimeType);
 
-    const splits: string[] = [];
+      const splits: string[] = [];
 
-    for (let i = 0; i < 4; i++) {
-      canvas.width = width;
-      canvas.height = quarterHeight;
+      if (mode === "vertical") {
+        const sliceHeight = Math.floor(height / splitCount);
 
-      ctx.drawImage(
-        img,
-        0,
-        i * quarterHeight,
-        width,
-        quarterHeight,
-        0,
-        0,
-        width,
-        quarterHeight
-      );
+        for (let i = 0; i < splitCount; i++) {
+          canvas.width = width;
+          canvas.height =
+            i === splitCount - 1
+              ? height - sliceHeight * (splitCount - 1)
+              : sliceHeight;
 
-      if (mimeType === "image/jpeg" || mimeType === "image/jpg") {
-        splits.push(canvas.toDataURL("image/jpeg", 1.0));
+          ctx.drawImage(
+            img,
+            0,
+            i * sliceHeight,
+            width,
+            canvas.height,
+            0,
+            0,
+            width,
+            canvas.height
+          );
+
+          splits.push(canvas.toDataURL(outputMimeType, 1.0));
+        }
       } else {
-        splits.push(canvas.toDataURL(mimeType));
-      }
-    }
+        const panelAspect = aspectPreset === "3:4" ? 3 / 4 : 4 / 5;
+        const panelHeight = 1600;
+        const panelWidth = Math.round(panelHeight * panelAspect);
+        const totalWidth = panelWidth * splitCount;
 
-    setSplitImages(splits);
-  };
+        const scale = Math.max(totalWidth / width, panelHeight / height);
+        const sourceWidth = totalWidth / scale;
+        const sourceHeight = panelHeight / scale;
+        const sourceX = Math.max(0, (width - sourceWidth) / 2);
+        const maxSourceY = Math.max(0, height - sourceHeight);
+        const sourceY = maxSourceY * (focusY / 100);
+
+        for (let i = 0; i < splitCount; i++) {
+          canvas.width = panelWidth;
+          canvas.height = panelHeight;
+
+          ctx.drawImage(
+            img,
+            sourceX + (sourceWidth / splitCount) * i,
+            sourceY,
+            sourceWidth / splitCount,
+            sourceHeight,
+            0,
+            0,
+            panelWidth,
+            panelHeight
+          );
+
+          splits.push(canvas.toDataURL(outputMimeType, 1.0));
+        }
+      }
+
+      setSplitImages(splits);
+    },
+    [aspectPreset, focusY, splitCount]
+  );
+
+  useEffect(() => {
+    if (!selectedImage) return;
+
+    const img = new Image();
+    img.onload = () => {
+      splitImage(img, imageType, splitMode);
+    };
+    img.src = selectedImage;
+  }, [selectedImage, imageType, splitMode, splitImage]);
 
   const dataURLtoBlob = (dataUrl: string): Blob => {
     const arr = dataUrl.split(",");
@@ -94,9 +156,15 @@ export default function Home() {
       try {
         const blob = dataURLtoBlob(dataUrl);
         const ext = getFileExtension();
-        const file = new File([blob], `split-${index + 1}.${ext}`, {
-          type: imageType,
-        });
+        const file = new File(
+          [blob],
+          `${splitMode === "carousel" ? "carousel" : "split"}-${
+            index + 1
+          }.${ext}`,
+          {
+            type: imageType,
+          }
+        );
 
         if (navigator.canShare({ files: [file] })) {
           await navigator.share({
@@ -119,7 +187,9 @@ export default function Home() {
   const downloadImage = (dataUrl: string, index: number) => {
     const link = document.createElement("a");
     const ext = getFileExtension();
-    link.download = `split-${index + 1}.${ext}`;
+    link.download = `${
+      splitMode === "carousel" ? "carousel" : "split"
+    }-${index + 1}.${ext}`;
     link.href = dataUrl;
     link.click();
   };
@@ -144,34 +214,137 @@ export default function Home() {
     setSelectedImage(null);
     setSplitImages([]);
     setImageType("image/png");
+    setFocusY(50);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] py-24 px-6">
-      <div className="max-w-3xl mx-auto">
-        <header className="mb-16">
-          <div className="flex items-center gap-4 mb-4">
-            <img
-              src="/logo.png"
-              alt=""
-              className="w-10 h-10"
-            />
-            <h1 className="text-4xl font-semibold tracking-tight text-[var(--text)]">
-              画像4分割ツール
+    <div className="min-h-screen bg-[var(--bg)] px-4 py-8 sm:px-6 sm:py-12">
+      <div className="mx-auto max-w-5xl">
+        <nav className="mb-24 flex items-center justify-between border-b border-[var(--border)] pb-4 font-mono text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">
+          <span>iruagaru / photo tool</span>
+          <a className="text-[var(--text)] underline decoration-[var(--border)] underline-offset-4" href="../">Preview images ↗</a>
+        </nav>
+
+        <header className="mb-24 grid gap-8 md:grid-cols-12 md:items-end">
+          <div className="md:col-span-9">
+            <p className="mb-6 font-mono text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">Image slicer / 01</p>
+            <h1 className="text-5xl font-semibold leading-[0.92] tracking-[-0.06em] text-[var(--text)] sm:text-7xl md:text-8xl">
+              Slice one image<br />into a sequence.
             </h1>
           </div>
-          <p className="text-[var(--text-muted)]">
-            X（Twitter）の縦長投稿用に画像を4分割します
+          <p className="max-w-prose text-sm leading-relaxed text-[var(--text-muted)] md:col-span-3">
+            1枚の写真を、つながった3枚または4枚のカルーセルへ。処理はすべてこの端末の中で完結します。
           </p>
         </header>
+
+        <section className="mb-16 grid gap-8 border-y border-[var(--border)] py-8 md:grid-cols-12">
+          <div className="md:col-span-5">
+            <h2 className="mb-4 font-mono text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">Mode</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setSplitMode("vertical")}
+                className={`border p-4 text-left transition-colors ${
+                  splitMode === "vertical"
+                    ? "border-[var(--text)] bg-[var(--bg-subtle)]"
+                    : "border-[var(--border)] hover:bg-[var(--bg-subtle)]"
+                }`}
+              >
+                <span className="block text-sm font-medium text-[var(--text)]">
+                  縦長を段分割
+                </span>
+                <span className="mt-1 block text-xs text-[var(--text-muted)]">
+                  上から順に3枚または4枚へ
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSplitMode("carousel")}
+                className={`border p-4 text-left transition-colors ${
+                  splitMode === "carousel"
+                    ? "border-[var(--text)] bg-[var(--bg-subtle)]"
+                    : "border-[var(--border)] hover:bg-[var(--bg-subtle)]"
+                }`}
+              >
+                <span className="block text-sm font-medium text-[var(--text)]">
+                  横長をカルーセル分割
+                </span>
+                <span className="mt-1 block text-xs text-[var(--text-muted)]">
+                  つながった縦写真を左から順番に
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div className="md:col-span-2">
+            <h2 className="mb-4 font-mono text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">Pieces</h2>
+            <div className="grid grid-cols-2 border border-[var(--border)]">
+              {[3, 4].map((count) => (
+                <button
+                  key={count}
+                  type="button"
+                  aria-pressed={splitCount === count}
+                  onClick={() => setSplitCount(count as SplitCount)}
+                  className={`px-4 py-4 text-center text-sm font-medium transition-colors ${
+                    splitCount === count
+                      ? "bg-[var(--text)] text-[var(--bg)]"
+                      : "text-[var(--text)] hover:bg-[var(--bg-subtle)]"
+                  }`}
+                >
+                  {count}枚
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {splitMode === "carousel" && (
+            <div className="grid grid-cols-1 gap-6 md:col-span-5 sm:grid-cols-2">
+              <div>
+                <label
+                  htmlFor="aspect-preset"
+                  className="text-sm font-medium text-[var(--text)]"
+                >
+                  1枚あたりの比率
+                </label>
+                <select
+                  id="aspect-preset"
+                  value={aspectPreset}
+                  onChange={(e) => setAspectPreset(e.target.value as AspectPreset)}
+                  className="mt-2 w-full border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--text)]"
+                >
+                  <option value="3:4">3:4（Xで見やすい縦長）</option>
+                  <option value="4:5">4:5（少し横幅広め）</option>
+                </select>
+              </div>
+              <div>
+                <label
+                  htmlFor="focus-y"
+                  className="flex items-center justify-between text-sm font-medium text-[var(--text)]"
+                >
+                  <span>上下位置</span>
+                  <span className="text-xs text-[var(--text-muted)]">{focusY}%</span>
+                </label>
+                <input
+                  id="focus-y"
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={focusY}
+                  onChange={(e) => setFocusY(Number(e.target.value))}
+                  className="mt-3 w-full accent-[var(--text)]"
+                />
+              </div>
+            </div>
+          )}
+        </section>
 
         {!selectedImage ? (
           <div
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
-            className={`border border-dashed p-24 text-center transition-colors ${
+            className={`border border-dashed px-6 py-24 text-center transition-colors sm:px-16 ${
               isDragging
                 ? "border-[var(--text)] bg-[var(--bg-subtle)]"
                 : "border-[var(--border)]"
@@ -212,21 +385,56 @@ export default function Home() {
                 />
               </div>
               <p className="text-sm text-[var(--text-muted)]">PNG, JPG など</p>
+              {splitMode === "carousel" && (
+                <p className="text-xs text-[var(--text-muted)]">
+                  横長写真を選ぶと、連続した縦{splitCount}枚に自動で切り出します
+                </p>
+              )}
             </div>
           </div>
         ) : (
           <div className="space-y-16">
             <section>
-              <h2 className="text-xl font-medium text-[var(--text)] mb-8">
-                分割結果
-              </h2>
+              <div className="mb-8 flex items-end justify-between gap-4 border-b border-[var(--border)] pb-4">
+                <div>
+                  <p className="mb-2 font-mono text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">Sequence / {splitCount}</p>
+                  <h2 className="text-2xl font-medium text-[var(--text)]">分割結果</h2>
+                </div>
+                <button onClick={reset} className="text-sm text-[var(--text-muted)] underline decoration-[var(--border)] underline-offset-4">別の写真を選ぶ</button>
+              </div>
               <p className="text-sm text-[var(--text-muted)] mb-6">
-                上から順番に投稿してください
+                {splitMode === "carousel"
+                  ? "左から順番に投稿してください"
+                  : "上から順番に投稿してください"}
               </p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {splitMode === "carousel" && (
+                <div className="mb-16 flex gap-px overflow-hidden border border-[var(--border)] bg-[var(--border)]">
+                  {splitImages.map((img, index) => (
+                    <figure key={`joined-${index}`} className="relative min-w-0 flex-1 bg-[var(--bg)]">
+                      <img
+                        src={img}
+                        alt=""
+                        className={`h-full w-full object-cover ${
+                          aspectPreset === "3:4" ? "aspect-[3/4]" : "aspect-[4/5]"
+                        }`}
+                      />
+                      <figcaption className="absolute left-2 top-2 bg-black px-2 py-1 font-mono text-[10px] text-white">{String(index + 1).padStart(2, "0")}</figcaption>
+                    </figure>
+                  ))}
+                </div>
+              )}
+              <div className={`grid grid-cols-2 gap-4 ${splitCount === 3 ? "md:grid-cols-3" : "md:grid-cols-4"}`}>
                 {splitImages.map((img, index) => (
                   <div key={index} className="space-y-3">
-                    <div className="relative aspect-square border border-[var(--border)] overflow-hidden">
+                    <div
+                      className={`relative border border-[var(--border)] overflow-hidden ${
+                        splitMode === "carousel"
+                          ? aspectPreset === "3:4"
+                            ? "aspect-[3/4]"
+                            : "aspect-[4/5]"
+                          : "aspect-square"
+                      }`}
+                    >
                       <img
                         src={img}
                         alt={`分割 ${index + 1}`}
@@ -244,13 +452,7 @@ export default function Home() {
               </div>
             </section>
 
-            <div className="flex justify-end gap-4">
-              <button
-                onClick={reset}
-                className="border border-[var(--border)] text-[var(--text)] py-2 px-4 text-sm font-medium hover:bg-[var(--bg-subtle)] transition-colors"
-              >
-                リセット
-              </button>
+            <div className="flex justify-end gap-4 border-t border-[var(--border)] pt-8">
               <button
                 onClick={async () => {
                   for (let i = 0; i < splitImages.length; i++) {
@@ -260,7 +462,7 @@ export default function Home() {
                 }}
                 className="bg-[var(--text)] text-[var(--bg)] py-2 px-4 text-sm font-medium hover:opacity-80 transition-opacity"
               >
-                全て保存
+                {splitCount}枚をすべて保存
               </button>
             </div>
 
@@ -271,8 +473,10 @@ export default function Home() {
               <ol className="text-sm text-[var(--text-muted)] space-y-2">
                 <li>1. 各画像の「保存」ボタンを1枚ずつタップ</li>
                 <li>2. シェアシート（共有メニュー）が表示される</li>
-                <li>3. 「画像を保存」または「"写真"に追加」をタップ</li>
-                <li>4. 写真アプリに保存されます</li>
+                <li>3. 「画像を保存」または「&quot;写真&quot;に追加」をタップ</li>
+                <li>
+                  4. {splitMode === "carousel" ? "左から順番" : "上から順番"}にXへ追加
+                </li>
               </ol>
               <p className="text-xs text-[var(--text-muted)] mt-4">
                 iPhoneでは「全て保存」は使えません。1枚ずつ保存してください。

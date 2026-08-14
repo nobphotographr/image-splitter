@@ -13,8 +13,19 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "画像4分割ツール",
-  description: "X（Twitter）の縦長投稿用に画像を4分割するWebツール",
+  title: "Image Slicer | iruagaru",
+  description: "1枚の写真を、つながった3枚または4枚のカルーセル画像へ分割するツールです。",
+  robots: { index: false, follow: false },
+  openGraph: {
+    title: "Image Slicer | iruagaru",
+    description: "1枚の写真を、つながった3枚または4枚のカルーセル画像へ分割します。",
+    images: ["https://xpreview.iruagaru.com/split/og.png"],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["https://xpreview.iruagaru.com/split/og.png"],
+  },
 };
 
 export default function RootLayout({
