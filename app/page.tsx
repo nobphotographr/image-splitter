@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 type SplitMode = "vertical" | "carousel";
 type AspectPreset = "3:4" | "4:5";
 type SplitCount = 3 | 4;
+type CropMode = "full" | "fixed";
 
 const getOutputMimeType = (mimeType: string) => {
   if (mimeType === "image/jpeg" || mimeType === "image/jpg") {
@@ -25,8 +26,10 @@ export default function Home() {
   const [imageType, setImageType] = useState<string>("image/png");
   const [splitMode, setSplitMode] = useState<SplitMode>("carousel");
   const [splitCount, setSplitCount] = useState<SplitCount>(4);
+  const [cropMode, setCropMode] = useState<CropMode>("full");
   const [aspectPreset, setAspectPreset] = useState<AspectPreset>("3:4");
   const [focusY, setFocusY] = useState(50);
+  const [sourceRatio, setSourceRatio] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = (file: File) => {
@@ -80,6 +83,30 @@ export default function Home() {
 
           splits.push(canvas.toDataURL(outputMimeType, 1.0));
         }
+      } else if (cropMode === "full") {
+        const sliceWidth = Math.floor(width / splitCount);
+
+        for (let i = 0; i < splitCount; i++) {
+          canvas.width =
+            i === splitCount - 1
+              ? width - sliceWidth * (splitCount - 1)
+              : sliceWidth;
+          canvas.height = height;
+
+          ctx.drawImage(
+            img,
+            i * sliceWidth,
+            0,
+            canvas.width,
+            height,
+            0,
+            0,
+            canvas.width,
+            height
+          );
+
+          splits.push(canvas.toDataURL(outputMimeType, 1.0));
+        }
       } else {
         const panelAspect = aspectPreset === "3:4" ? 3 / 4 : 4 / 5;
         const panelHeight = 1600;
@@ -115,7 +142,7 @@ export default function Home() {
 
       setSplitImages(splits);
     },
-    [aspectPreset, focusY, splitCount]
+    [aspectPreset, cropMode, focusY, splitCount]
   );
 
   useEffect(() => {
@@ -123,6 +150,7 @@ export default function Home() {
 
     const img = new Image();
     img.onload = () => {
+      setSourceRatio(img.width / img.height);
       splitImage(img, imageType, splitMode);
     };
     img.src = selectedImage;
@@ -215,8 +243,18 @@ export default function Home() {
     setSplitImages([]);
     setImageType("image/png");
     setFocusY(50);
+    setSourceRatio(1);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
+
+  const outputAspect =
+    splitMode === "carousel"
+      ? cropMode === "full"
+        ? sourceRatio / splitCount
+        : aspectPreset === "3:4"
+          ? 3 / 4
+          : 4 / 5
+      : sourceRatio * splitCount;
 
   return (
     <div className="min-h-screen bg-[var(--bg)] px-4 py-8 sm:px-6 sm:py-12">
@@ -300,41 +338,80 @@ export default function Home() {
 
           {splitMode === "carousel" && (
             <div className="grid grid-cols-1 gap-6 md:col-span-5 sm:grid-cols-2">
-              <div>
-                <label
-                  htmlFor="aspect-preset"
-                  className="text-sm font-medium text-[var(--text)]"
-                >
-                  1枚あたりの比率
-                </label>
-                <select
-                  id="aspect-preset"
-                  value={aspectPreset}
-                  onChange={(e) => setAspectPreset(e.target.value as AspectPreset)}
-                  className="mt-2 w-full border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--text)]"
-                >
-                  <option value="3:4">3:4（Xで見やすい縦長）</option>
-                  <option value="4:5">4:5（少し横幅広め）</option>
-                </select>
+              <div className="sm:col-span-2">
+                <span className="text-sm font-medium text-[var(--text)]">写真の使い方</span>
+                <div className="mt-2 grid grid-cols-2 border border-[var(--border)]">
+                  <button
+                    type="button"
+                    aria-pressed={cropMode === "full"}
+                    onClick={() => setCropMode("full")}
+                    className={`px-3 py-3 text-left text-xs transition-colors ${
+                      cropMode === "full"
+                        ? "bg-[var(--text)] text-[var(--bg)]"
+                        : "text-[var(--text)] hover:bg-[var(--bg-subtle)]"
+                    }`}
+                  >
+                    全体を使う
+                    <small className="mt-1 block opacity-70">クロップなし</small>
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={cropMode === "fixed"}
+                    onClick={() => setCropMode("fixed")}
+                    className={`px-3 py-3 text-left text-xs transition-colors ${
+                      cropMode === "fixed"
+                        ? "bg-[var(--text)] text-[var(--bg)]"
+                        : "text-[var(--text)] hover:bg-[var(--bg-subtle)]"
+                    }`}
+                  >
+                    比率を揃える
+                    <small className="mt-1 block opacity-70">上下をトリミング</small>
+                  </button>
+                </div>
               </div>
-              <div>
-                <label
-                  htmlFor="focus-y"
-                  className="flex items-center justify-between text-sm font-medium text-[var(--text)]"
-                >
-                  <span>上下位置</span>
-                  <span className="text-xs text-[var(--text-muted)]">{focusY}%</span>
-                </label>
-                <input
-                  id="focus-y"
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={focusY}
-                  onChange={(e) => setFocusY(Number(e.target.value))}
-                  className="mt-3 w-full accent-[var(--text)]"
-                />
-              </div>
+              {cropMode === "fixed" && (
+                <>
+                  <div>
+                    <label
+                      htmlFor="aspect-preset"
+                      className="text-sm font-medium text-[var(--text)]"
+                    >
+                      1枚あたりの比率
+                    </label>
+                    <select
+                      id="aspect-preset"
+                      value={aspectPreset}
+                      onChange={(e) =>
+                        setAspectPreset(e.target.value as AspectPreset)
+                      }
+                      className="mt-2 w-full border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--text)]"
+                    >
+                      <option value="3:4">3:4（Xで見やすい縦長）</option>
+                      <option value="4:5">4:5（少し横幅広め）</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="focus-y"
+                      className="flex items-center justify-between text-sm font-medium text-[var(--text)]"
+                    >
+                      <span>上下位置</span>
+                      <span className="text-xs text-[var(--text-muted)]">
+                        {focusY}%
+                      </span>
+                    </label>
+                    <input
+                      id="focus-y"
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={focusY}
+                      onChange={(e) => setFocusY(Number(e.target.value))}
+                      className="mt-3 w-full accent-[var(--text)]"
+                    />
+                  </div>
+                </>
+              )}
             </div>
           )}
         </section>
@@ -387,7 +464,9 @@ export default function Home() {
               <p className="text-sm text-[var(--text-muted)]">PNG, JPG など</p>
               {splitMode === "carousel" && (
                 <p className="text-xs text-[var(--text-muted)]">
-                  横長写真を選ぶと、連続した縦{splitCount}枚に自動で切り出します
+                  {cropMode === "full"
+                    ? `写真全体を残したまま、等幅の${splitCount}枚に分割します`
+                    : `固定比率で、連続した縦${splitCount}枚に切り出します`}
                 </p>
               )}
             </div>
@@ -411,13 +490,7 @@ export default function Home() {
                 <div className="mb-16 flex gap-px overflow-hidden border border-[var(--border)] bg-[var(--border)]">
                   {splitImages.map((img, index) => (
                     <figure key={`joined-${index}`} className="relative min-w-0 flex-1 bg-[var(--bg)]">
-                      <img
-                        src={img}
-                        alt=""
-                        className={`h-full w-full object-cover ${
-                          aspectPreset === "3:4" ? "aspect-[3/4]" : "aspect-[4/5]"
-                        }`}
-                      />
+                      <img src={img} alt="" className="h-full w-full object-cover" style={{ aspectRatio: outputAspect }} />
                       <figcaption className="absolute left-2 top-2 bg-black px-2 py-1 font-mono text-[10px] text-white">{String(index + 1).padStart(2, "0")}</figcaption>
                     </figure>
                   ))}
@@ -427,13 +500,8 @@ export default function Home() {
                 {splitImages.map((img, index) => (
                   <div key={index} className="space-y-3">
                     <div
-                      className={`relative border border-[var(--border)] overflow-hidden ${
-                        splitMode === "carousel"
-                          ? aspectPreset === "3:4"
-                            ? "aspect-[3/4]"
-                            : "aspect-[4/5]"
-                          : "aspect-square"
-                      }`}
+                      className="relative overflow-hidden border border-[var(--border)]"
+                      style={{ aspectRatio: outputAspect }}
                     >
                       <img
                         src={img}
