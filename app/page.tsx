@@ -168,40 +168,40 @@ export default function Home() {
     return new Blob([u8arr], { type: mime });
   };
 
-  const getFileExtension = () => {
-    if (imageType === "image/jpeg" || imageType === "image/jpg") {
+  const getFileExtension = (mimeType: string) => {
+    if (mimeType === "image/jpeg" || mimeType === "image/jpg") {
       return "jpg";
-    } else if (imageType === "image/png") {
+    } else if (mimeType === "image/png") {
       return "png";
-    } else if (imageType === "image/webp") {
+    } else if (mimeType === "image/webp") {
       return "webp";
     }
     return "png";
   };
 
-  const shareImage = async (dataUrl: string, index: number) => {
-    if (navigator.share && navigator.canShare) {
-      try {
-        const blob = dataURLtoBlob(dataUrl);
-        const ext = getFileExtension();
-        const file = new File(
-          [blob],
-          `${splitMode === "carousel" ? "carousel" : "split"}-${
-            index + 1
-          }.${ext}`,
-          {
-            type: imageType,
-          }
-        );
+  const createImageFile = (dataUrl: string, index: number) => {
+    const blob = dataURLtoBlob(dataUrl);
+    const ext = getFileExtension(blob.type);
 
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            files: [file],
-            title: `分割画像 ${index + 1}`,
-          });
-        } else {
-          downloadImage(dataUrl, index);
-        }
+    return new File(
+      [blob],
+      `${splitMode === "carousel" ? "carousel" : "split"}-${index + 1}.${ext}`,
+      {
+        type: blob.type,
+      }
+    );
+  };
+
+  const shareImage = async (dataUrl: string, index: number) => {
+    const file = createImageFile(dataUrl, index);
+    const canShareFile =
+      typeof navigator.share === "function" &&
+      (typeof navigator.canShare !== "function" ||
+        navigator.canShare({ files: [file] }));
+
+    if (canShareFile) {
+      try {
+        await navigator.share({ files: [file] });
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
           downloadImage(dataUrl, index);
@@ -212,9 +212,31 @@ export default function Home() {
     }
   };
 
+  const saveAllImages = async () => {
+    const files = splitImages.map(createImageFile);
+    const canShareFiles =
+      typeof navigator.share === "function" &&
+      (typeof navigator.canShare !== "function" ||
+        navigator.canShare({ files }));
+
+    if (canShareFiles) {
+      try {
+        await navigator.share({ files });
+        return;
+      } catch (error) {
+        if ((error as Error).name === "AbortError") return;
+      }
+    }
+
+    for (let i = 0; i < splitImages.length; i++) {
+      downloadImage(splitImages[i], i);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  };
+
   const downloadImage = (dataUrl: string, index: number) => {
     const link = document.createElement("a");
-    const ext = getFileExtension();
+    const ext = getFileExtension(dataURLtoBlob(dataUrl).type);
     link.download = `${
       splitMode === "carousel" ? "carousel" : "split"
     }-${index + 1}.${ext}`;
@@ -513,7 +535,7 @@ export default function Home() {
                       onClick={() => shareImage(img, index)}
                       className="w-full bg-[var(--text)] text-[var(--bg)] py-2 px-4 text-sm font-medium hover:opacity-80 transition-opacity"
                     >
-                      {index + 1}枚目を保存
+                      {index + 1}枚目を保存 / 共有
                     </button>
                   </div>
                 ))}
@@ -522,15 +544,10 @@ export default function Home() {
 
             <div className="flex justify-end gap-4 border-t border-[var(--border)] pt-8">
               <button
-                onClick={async () => {
-                  for (let i = 0; i < splitImages.length; i++) {
-                    downloadImage(splitImages[i], i);
-                    await new Promise((resolve) => setTimeout(resolve, 100));
-                  }
-                }}
+                onClick={saveAllImages}
                 className="bg-[var(--text)] text-[var(--bg)] py-2 px-4 text-sm font-medium hover:opacity-80 transition-opacity"
               >
-                {splitCount}枚をすべて保存
+                {splitCount}枚をまとめて保存 / 共有
               </button>
             </div>
 
@@ -539,16 +556,16 @@ export default function Home() {
                 iPhoneで写真アプリに保存する方法
               </h3>
               <ol className="text-sm text-[var(--text-muted)] space-y-2">
-                <li>1. 各画像の「保存」ボタンを1枚ずつタップ</li>
+                <li>1. 「{splitCount}枚をまとめて保存 / 共有」をタップ</li>
                 <li>2. シェアシート（共有メニュー）が表示される</li>
-                <li>3. 「画像を保存」または「&quot;写真&quot;に追加」をタップ</li>
+                <li>3. 「画像を保存」または「{splitCount}枚の画像を保存」をタップ</li>
                 <li>
                   4. {splitMode === "carousel" ? "左から順番" : "上から順番"}にXへ追加
                 </li>
               </ol>
               <p className="text-xs text-[var(--text-muted)] mt-4">
-                iPhoneでは「全て保存」は使えません。1枚ずつ保存してください。
-                PCやAndroidでは「全て保存」で一括ダウンロードできます。
+                保存項目が見つからない場合は、シェアシートを下へスクロールしてください。
+                1枚ずつ保存することもできます。
               </p>
             </section>
           </div>
