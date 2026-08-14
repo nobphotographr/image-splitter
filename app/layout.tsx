@@ -13,18 +13,36 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://xpreview.iruagaru.com"),
   title: "Image Slicer | iruagaru",
   description: "1枚の写真を、つながった3枚または4枚のカルーセル画像へ分割するツールです。",
-  robots: { index: false, follow: false },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large" },
+  },
   openGraph: {
     title: "Image Slicer | iruagaru",
     description: "1枚の写真を、つながった3枚または4枚のカルーセル画像へ分割します。",
-    images: ["https://xpreview.iruagaru.com/split/og.png"],
+    url: "https://xpreview.iruagaru.com/split/",
+    siteName: "iruagaru photo tools",
+    images: [
+      {
+        url: "https://xpreview.iruagaru.com/split/og.png?v=20260814-2",
+        secureUrl: "https://xpreview.iruagaru.com/split/og.png?v=20260814-2",
+        width: 1536,
+        height: 1024,
+        type: "image/png",
+        alt: "IRUAGARU PHOTO TOOLS — PREVIEW / SLICE",
+      },
+    ],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    images: ["https://xpreview.iruagaru.com/split/og.png"],
+    title: "Image Slicer | iruagaru",
+    description: "1枚の写真を、つながった3枚または4枚のカルーセル画像へ分割します。",
+    images: ["https://xpreview.iruagaru.com/split/og.png?v=20260814-2"],
   },
 };
 
