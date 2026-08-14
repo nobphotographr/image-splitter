@@ -283,7 +283,10 @@ export default function Home() {
       <div className="mx-auto max-w-5xl">
         <nav className="mb-24 flex items-center justify-between border-b border-[var(--border)] pb-4 font-mono text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">
           <span>iruagaru / photo tool</span>
-          <a className="text-[var(--text)] underline decoration-[var(--border)] underline-offset-4" href="../">Preview images ↗</a>
+          <span className="flex gap-4">
+            <a className="text-[var(--text)] underline decoration-[var(--border)] underline-offset-4" href="../">Preview ↗</a>
+            <a className="text-[var(--text)] underline decoration-[var(--border)] underline-offset-4" href="../annotate/">Annotate ↗</a>
+          </span>
         </nav>
 
         <header className="mb-24 grid gap-8 md:grid-cols-12 md:items-end">
