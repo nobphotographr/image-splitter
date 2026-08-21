@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL("https://tools.iruagaru.com"),
   title: "Image Slicer | iruagaru",
-  description: "1枚の写真を、つながった3枚または4枚のカルーセル画像へ分割するツールです。",
+  description: "写真を回転し、つながった3枚または4枚のカルーセル画像へ分割するツールです。",
   robots: {
     index: true,
     follow: true,
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Image Slicer | iruagaru",
-    description: "1枚の写真を、つながった3枚または4枚のカルーセル画像へ分割します。",
+    description: "写真を左右へ90度回転し、つながった3枚または4枚のカルーセル画像へ分割します。",
     url: "https://tools.iruagaru.com/image-splitter/",
     siteName: "iruagaru photo tools",
     images: [
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Image Slicer | iruagaru",
-    description: "1枚の写真を、つながった3枚または4枚のカルーセル画像へ分割します。",
+    description: "写真を左右へ90度回転し、つながった3枚または4枚のカルーセル画像へ分割します。",
     images: ["https://tools.iruagaru.com/image-splitter/og.png?v=20260814-2"],
   },
 };

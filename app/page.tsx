@@ -8,6 +8,7 @@ type SplitMode = "vertical" | "carousel";
 type AspectPreset = "3:4" | "4:5";
 type SplitCount = 3 | 4;
 type CropMode = "full" | "fixed";
+type RotationMode = "none" | "left" | "right";
 
 const getOutputMimeType = (mimeType: string) => {
   if (mimeType === "image/jpeg" || mimeType === "image/jpg") {
@@ -28,6 +29,7 @@ export default function Home() {
   const [splitCount, setSplitCount] = useState<SplitCount>(4);
   const [cropMode, setCropMode] = useState<CropMode>("full");
   const [aspectPreset, setAspectPreset] = useState<AspectPreset>("3:4");
+  const [rotationMode, setRotationMode] = useState<RotationMode>("none");
   const [focusY, setFocusY] = useState(50);
   const [sourceRatio, setSourceRatio] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -53,8 +55,30 @@ export default function Home() {
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      const width = img.width;
-      const height = img.height;
+      let source: CanvasImageSource = img;
+      let width = img.width;
+      let height = img.height;
+
+      if (rotationMode !== "none") {
+        const rotatedCanvas = document.createElement("canvas");
+        rotatedCanvas.width = img.height;
+        rotatedCanvas.height = img.width;
+
+        const rotatedCtx = rotatedCanvas.getContext("2d");
+        if (!rotatedCtx) return;
+
+        rotatedCtx.translate(rotatedCanvas.width / 2, rotatedCanvas.height / 2);
+        rotatedCtx.rotate(
+          rotationMode === "left" ? -Math.PI / 2 : Math.PI / 2
+        );
+        rotatedCtx.drawImage(img, -img.width / 2, -img.height / 2);
+
+        source = rotatedCanvas;
+        width = rotatedCanvas.width;
+        height = rotatedCanvas.height;
+      }
+
+      setSourceRatio(width / height);
       const outputMimeType = getOutputMimeType(mimeType);
 
       const splits: string[] = [];
@@ -70,7 +94,7 @@ export default function Home() {
               : sliceHeight;
 
           ctx.drawImage(
-            img,
+            source,
             0,
             i * sliceHeight,
             width,
@@ -94,7 +118,7 @@ export default function Home() {
           canvas.height = height;
 
           ctx.drawImage(
-            img,
+            source,
             i * sliceWidth,
             0,
             canvas.width,
@@ -125,7 +149,7 @@ export default function Home() {
           canvas.height = panelHeight;
 
           ctx.drawImage(
-            img,
+            source,
             sourceX + (sourceWidth / splitCount) * i,
             sourceY,
             sourceWidth / splitCount,
@@ -140,9 +164,13 @@ export default function Home() {
         }
       }
 
-      setSplitImages(splits);
+      setSplitImages(
+        mode === "carousel" && rotationMode === "right"
+          ? splits.reverse()
+          : splits
+      );
     },
-    [aspectPreset, cropMode, focusY, splitCount]
+    [aspectPreset, cropMode, focusY, rotationMode, splitCount]
   );
 
   useEffect(() => {
@@ -150,7 +178,6 @@ export default function Home() {
 
     const img = new Image();
     img.onload = () => {
-      setSourceRatio(img.width / img.height);
       splitImage(img, imageType, splitMode);
     };
     img.src = selectedImage;
@@ -278,6 +305,11 @@ export default function Home() {
           : 4 / 5
       : sourceRatio * splitCount;
 
+  const joinedPreviewImages =
+    splitMode === "carousel" && rotationMode === "right"
+      ? [...splitImages].reverse()
+      : splitImages;
+
   return (
     <div className="min-h-screen bg-[var(--bg)] px-4 py-8 sm:px-6 sm:py-12">
       <div className="mx-auto max-w-5xl">
@@ -308,7 +340,10 @@ export default function Home() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 type="button"
-                onClick={() => setSplitMode("vertical")}
+                onClick={() => {
+                  setSplitMode("vertical");
+                  setRotationMode("none");
+                }}
                 className={`border p-4 text-left transition-colors ${
                   splitMode === "vertical"
                     ? "border-[var(--text)] bg-[var(--bg-subtle)]"
@@ -442,6 +477,52 @@ export default function Home() {
           )}
         </section>
 
+        {splitMode === "carousel" && (
+          <section className="mb-16 grid gap-6 border-b border-[var(--border)] pb-8 md:grid-cols-12 md:items-start">
+            <div className="md:col-span-3">
+              <h2 className="mb-2 font-mono text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                Rotate
+              </h2>
+              <p className="text-xs leading-relaxed text-[var(--text-muted)]">
+                縦画像を横向きにしてから分割できます
+              </p>
+            </div>
+            <div className="grid grid-cols-3 border border-[var(--border)] md:col-span-6">
+              {(
+                [
+                  ["none", "そのまま", "↕"],
+                  ["left", "左へ90°", "↶"],
+                  ["right", "右へ90°", "↷"],
+                ] as const
+              ).map(([value, label, icon]) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-pressed={rotationMode === value}
+                  onClick={() => setRotationMode(value)}
+                  className={`px-3 py-4 text-center text-xs transition-colors sm:text-sm ${
+                    rotationMode === value
+                      ? "bg-[var(--text)] text-[var(--bg)]"
+                      : "text-[var(--text)] hover:bg-[var(--bg-subtle)]"
+                  }`}
+                >
+                  <span aria-hidden="true" className="mb-1 block text-lg leading-none">
+                    {icon}
+                  </span>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs leading-relaxed text-[var(--text-muted)] md:col-span-3">
+              {rotationMode === "right"
+                ? "右回転でも、元画像の上側から1、2、3…の順に保存します"
+                : rotationMode === "left"
+                  ? "元画像の上側から1、2、3…の順に保存します"
+                  : "画像の向きは変更しません"}
+            </p>
+          </section>
+        )}
+
         {!selectedImage ? (
           <div
             onDrop={handleDrop}
@@ -509,15 +590,21 @@ export default function Home() {
               </div>
               <p className="text-sm text-[var(--text-muted)] mb-6">
                 {splitMode === "carousel"
-                  ? "左から順番に投稿してください"
+                  ? "1から番号順に投稿してください"
                   : "上から順番に投稿してください"}
               </p>
               {splitMode === "carousel" && (
                 <div className="mb-16 flex gap-px overflow-hidden border border-[var(--border)] bg-[var(--border)]">
-                  {splitImages.map((img, index) => (
+                  {joinedPreviewImages.map((img, index) => (
                     <figure key={`joined-${index}`} className="relative min-w-0 flex-1 bg-[var(--bg)]">
                       <img src={img} alt="" className="h-full w-full object-cover" style={{ aspectRatio: outputAspect }} />
-                      <figcaption className="absolute left-2 top-2 bg-black px-2 py-1 font-mono text-[10px] text-white">{String(index + 1).padStart(2, "0")}</figcaption>
+                      <figcaption className="absolute left-2 top-2 bg-black px-2 py-1 font-mono text-[10px] text-white">
+                        {String(
+                          rotationMode === "right"
+                            ? splitCount - index
+                            : index + 1
+                        ).padStart(2, "0")}
+                      </figcaption>
                     </figure>
                   ))}
                 </div>
@@ -564,7 +651,7 @@ export default function Home() {
                 <li>2. シェアシート（共有メニュー）が表示される</li>
                 <li>3. 「画像を保存」または「{splitCount}枚の画像を保存」をタップ</li>
                 <li>
-                  4. {splitMode === "carousel" ? "左から順番" : "上から順番"}にXへ追加
+                  4. {splitMode === "carousel" ? "1から番号順" : "上から順番"}にXへ追加
                 </li>
               </ol>
               <p className="text-xs text-[var(--text-muted)] mt-4">
