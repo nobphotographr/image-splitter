@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://xpreview.iruagaru.com"),
+  metadataBase: new URL("https://tools.iruagaru.com"),
   title: "Image Slicer | iruagaru",
   description: "1枚の写真を、つながった3枚または4枚のカルーセル画像へ分割するツールです。",
   robots: {
@@ -24,12 +24,12 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Image Slicer | iruagaru",
     description: "1枚の写真を、つながった3枚または4枚のカルーセル画像へ分割します。",
-    url: "https://xpreview.iruagaru.com/split/",
+    url: "https://tools.iruagaru.com/image-splitter/",
     siteName: "iruagaru photo tools",
     images: [
       {
-        url: "https://xpreview.iruagaru.com/split/og.png?v=20260814-2",
-        secureUrl: "https://xpreview.iruagaru.com/split/og.png?v=20260814-2",
+        url: "https://tools.iruagaru.com/image-splitter/og.png?v=20260814-2",
+        secureUrl: "https://tools.iruagaru.com/image-splitter/og.png?v=20260814-2",
         width: 1536,
         height: 1024,
         type: "image/png",
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Image Slicer | iruagaru",
     description: "1枚の写真を、つながった3枚または4枚のカルーセル画像へ分割します。",
-    images: ["https://xpreview.iruagaru.com/split/og.png?v=20260814-2"],
+    images: ["https://tools.iruagaru.com/image-splitter/og.png?v=20260814-2"],
   },
 };
 

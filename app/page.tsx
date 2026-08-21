@@ -285,8 +285,8 @@ export default function Home() {
           <span>iruagaru / photo tool</span>
           <span className="flex gap-4">
             <a className="text-[var(--text)] underline decoration-[var(--border)] underline-offset-4" href="../">Preview ↗</a>
-            <a className="text-[var(--text)] underline decoration-[var(--border)] underline-offset-4" href="../compose/">Compose ↗</a>
-            <a className="text-[var(--text)] underline decoration-[var(--border)] underline-offset-4" href="../annotate/">Annotate ↗</a>
+            <a className="text-[var(--text)] underline decoration-[var(--border)] underline-offset-4" href="../image-composer/">Compose ↗</a>
+            <a className="text-[var(--text)] underline decoration-[var(--border)] underline-offset-4" href="../image-annotator/">Annotate ↗</a>
           </span>
         </nav>
 
