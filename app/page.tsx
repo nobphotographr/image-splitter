@@ -697,7 +697,7 @@ export default function Home() {
                   onClick={() => setCropMode("fixed")}
                   className="border border-[var(--border)] px-4 py-3 text-left text-sm font-medium text-[var(--text)] hover:bg-[var(--bg-subtle)]"
                 >
-                  3:4に切り出して分割
+                  {aspectPreset}に切り出して分割
                 </button>
                 <button
                   type="button"
