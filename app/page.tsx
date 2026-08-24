@@ -32,11 +32,17 @@ export default function Home() {
   const [rotationMode, setRotationMode] = useState<RotationMode>("none");
   const [focusY, setFocusY] = useState(50);
   const [sourceRatio, setSourceRatio] = useState(1);
+  const [sourceIsPortrait, setSourceIsPortrait] = useState(false);
+  const [allowNarrowPortrait, setAllowNarrowPortrait] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = (file: File) => {
+    setImageError(null);
+    setAllowNarrowPortrait(false);
+
     if (!file.type.startsWith("image/")) {
-      alert("画像ファイルを選択してください");
+      setImageError("画像ファイルを選択してください。");
       return;
     }
 
@@ -45,6 +51,10 @@ export default function Home() {
     const reader = new FileReader();
     reader.onload = (e) => {
       setSelectedImage(e.target?.result as string);
+    };
+    reader.onerror = () => {
+      setSelectedImage(null);
+      setImageError("画像ファイルを読み込めませんでした。別の画像をお試しください。");
     };
     reader.readAsDataURL(file);
   };
@@ -178,10 +188,48 @@ export default function Home() {
 
     const img = new Image();
     img.onload = () => {
-      splitImage(img, imageType, splitMode);
+      const isPortrait = img.naturalHeight > img.naturalWidth;
+      setSourceIsPortrait(isPortrait);
+
+      const needsPortraitChoice =
+        isPortrait &&
+        splitMode === "carousel" &&
+        cropMode === "full" &&
+        rotationMode === "none" &&
+        !allowNarrowPortrait;
+
+      if (needsPortraitChoice) {
+        setSourceRatio(img.width / img.height);
+        setSplitImages([]);
+        return;
+      }
+
+      try {
+        splitImage(img, imageType, splitMode);
+        setImageError(null);
+      } catch {
+        setSplitImages([]);
+        setImageError(
+          "この画像はブラウザで処理できませんでした。PNGまたはJPGへ変換してからお試しください。"
+        );
+      }
+    };
+    img.onerror = () => {
+      setSplitImages([]);
+      setImageError(
+        "この画像形式をブラウザで読み込めません。PNGまたはJPGへ変換してからお試しください。"
+      );
     };
     img.src = selectedImage;
-  }, [selectedImage, imageType, splitMode, splitImage]);
+  }, [
+    allowNarrowPortrait,
+    cropMode,
+    imageType,
+    rotationMode,
+    selectedImage,
+    splitImage,
+    splitMode,
+  ]);
 
   const dataURLtoBlob = (dataUrl: string): Blob => {
     const arr = dataUrl.split(",");
@@ -293,6 +341,9 @@ export default function Home() {
     setImageType("image/png");
     setFocusY(50);
     setSourceRatio(1);
+    setSourceIsPortrait(false);
+    setAllowNarrowPortrait(false);
+    setImageError(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -309,6 +360,16 @@ export default function Home() {
     splitMode === "carousel" && rotationMode === "right"
       ? [...splitImages].reverse()
       : splitImages;
+
+  const needsPortraitChoice =
+    Boolean(selectedImage) &&
+    sourceIsPortrait &&
+    splitMode === "carousel" &&
+    cropMode === "full" &&
+    rotationMode === "none" &&
+    !allowNarrowPortrait;
+
+  const isVeryNarrowPreview = outputAspect < 0.35;
 
   return (
     <div className="min-h-screen bg-[var(--bg)] px-4 py-8 sm:px-6 sm:py-12">
@@ -569,6 +630,11 @@ export default function Home() {
                 />
               </div>
               <p className="text-sm text-[var(--text-muted)]">PNG, JPG など</p>
+              {imageError && (
+                <p role="alert" className="text-sm text-[var(--text)]">
+                  {imageError}
+                </p>
+              )}
               {splitMode === "carousel" && (
                 <p className="text-xs text-[var(--text-muted)]">
                   {cropMode === "full"
@@ -578,6 +644,71 @@ export default function Home() {
               )}
             </div>
           </div>
+        ) : imageError ? (
+          <section className="border-y border-[var(--border)] py-16">
+            <p className="mb-4 font-mono text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">
+              Image error
+            </p>
+            <h2 className="mb-4 text-2xl font-medium text-[var(--text)]">
+              画像を読み込めませんでした
+            </h2>
+            <p role="alert" className="max-w-prose text-sm leading-relaxed text-[var(--text-muted)]">
+              {imageError}
+            </p>
+            <button
+              type="button"
+              onClick={reset}
+              className="mt-8 border border-[var(--border)] px-4 py-3 text-sm font-medium text-[var(--text)] hover:bg-[var(--bg-subtle)]"
+            >
+              別の写真を選ぶ
+            </button>
+          </section>
+        ) : needsPortraitChoice ? (
+          <section className="grid gap-8 border-y border-[var(--border)] py-12 md:grid-cols-12">
+            <div className="md:col-span-5">
+              <p className="mb-4 font-mono text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                Portrait image
+              </p>
+              <h2 className="text-2xl font-medium text-[var(--text)]">
+                縦写真の使い方を選んでください
+              </h2>
+            </div>
+            <div className="md:col-span-7">
+              <p className="mb-6 max-w-prose text-sm leading-relaxed text-[var(--text-muted)]">
+                このまま横方向へ{splitCount}分割すると、1枚ずつがかなり細長くなります。写真を回転するか、固定比率で切り出すと見やすい形になります。
+              </p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setRotationMode("left")}
+                  className="border border-[var(--text)] bg-[var(--text)] px-4 py-3 text-left text-sm font-medium text-[var(--bg)]"
+                >
+                  左へ90°回転して分割
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRotationMode("right")}
+                  className="border border-[var(--border)] px-4 py-3 text-left text-sm font-medium text-[var(--text)] hover:bg-[var(--bg-subtle)]"
+                >
+                  右へ90°回転して分割
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCropMode("fixed")}
+                  className="border border-[var(--border)] px-4 py-3 text-left text-sm font-medium text-[var(--text)] hover:bg-[var(--bg-subtle)]"
+                >
+                  3:4に切り出して分割
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAllowNarrowPortrait(true)}
+                  className="border border-[var(--border)] px-4 py-3 text-left text-sm text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]"
+                >
+                  細長いまま分割する
+                </button>
+              </div>
+            </div>
+          </section>
         ) : (
           <div className="space-y-16">
             <section>
@@ -594,10 +725,24 @@ export default function Home() {
                   : "上から順番に投稿してください"}
               </p>
               {splitMode === "carousel" && (
-                <div className="mb-16 flex gap-px overflow-hidden border border-[var(--border)] bg-[var(--border)]">
+                <div
+                  className={`mb-16 flex gap-px overflow-hidden border border-[var(--border)] bg-[var(--border)] ${
+                    isVeryNarrowPreview ? "justify-center" : ""
+                  }`}
+                >
                   {joinedPreviewImages.map((img, index) => (
-                    <figure key={`joined-${index}`} className="relative min-w-0 flex-1 bg-[var(--bg)]">
-                      <img src={img} alt="" className="h-full w-full object-cover" style={{ aspectRatio: outputAspect }} />
+                    <figure
+                      key={`joined-${index}`}
+                      className={`relative bg-[var(--bg)] ${
+                        isVeryNarrowPreview ? "flex-none" : "min-w-0 flex-1"
+                      }`}
+                      style={
+                        isVeryNarrowPreview
+                          ? { aspectRatio: outputAspect, height: "min(64vh, 640px)" }
+                          : { aspectRatio: outputAspect }
+                      }
+                    >
+                      <img src={img} alt="" className="h-full w-full object-cover" />
                       <figcaption className="absolute left-2 top-2 bg-black px-2 py-1 font-mono text-[10px] text-white">
                         {String(
                           rotationMode === "right"
@@ -614,12 +759,18 @@ export default function Home() {
                   <div key={index} className="space-y-3">
                     <div
                       className="relative overflow-hidden border border-[var(--border)]"
-                      style={{ aspectRatio: outputAspect }}
+                      style={
+                        isVeryNarrowPreview
+                          ? { height: "min(56vh, 560px)" }
+                          : { aspectRatio: outputAspect }
+                      }
                     >
                       <img
                         src={img}
                         alt={`分割 ${index + 1}`}
-                        className="w-full h-full object-cover"
+                        className={`h-full w-full ${
+                          isVeryNarrowPreview ? "object-contain" : "object-cover"
+                        }`}
                       />
                     </div>
                     <button
