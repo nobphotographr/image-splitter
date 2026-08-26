@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 type SplitMode = "vertical" | "carousel";
 type AspectPreset = "3:4" | "4:5";
-type SplitCount = 3 | 4;
+type SplitCount = 2 | 3 | 4;
 type CropMode = "full" | "fixed";
 type RotationMode = "none" | "left" | "right";
 
@@ -391,7 +391,7 @@ export default function Home() {
             </h1>
           </div>
           <p className="max-w-prose text-sm leading-relaxed text-[var(--text-muted)] md:col-span-3">
-            1枚の写真を、つながった3枚または4枚のカルーセルへ。処理はすべてこの端末の中で完結します。
+            1枚の写真を、つながった2〜4枚のカルーセルへ。処理はすべてこの端末の中で完結します。
           </p>
         </header>
 
@@ -415,7 +415,7 @@ export default function Home() {
                   縦長を段分割
                 </span>
                 <span className="mt-1 block text-xs text-[var(--text-muted)]">
-                  上から順に3枚または4枚へ
+                  上から順に2〜4枚へ
                 </span>
               </button>
               <button
@@ -439,8 +439,8 @@ export default function Home() {
 
           <div className="md:col-span-2">
             <h2 className="mb-4 font-mono text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">Pieces</h2>
-            <div className="grid grid-cols-2 border border-[var(--border)]">
-              {[3, 4].map((count) => (
+            <div className="grid grid-cols-3 border border-[var(--border)]">
+              {[2, 3, 4].map((count) => (
                 <button
                   key={count}
                   type="button"
@@ -754,7 +754,7 @@ export default function Home() {
                   ))}
                 </div>
               )}
-              <div className={`grid grid-cols-2 gap-4 ${splitCount === 3 ? "md:grid-cols-3" : "md:grid-cols-4"}`}>
+              <div className={`grid grid-cols-2 gap-4 ${splitCount === 2 ? "md:grid-cols-2" : splitCount === 3 ? "md:grid-cols-3" : "md:grid-cols-4"}`}>
                 {splitImages.map((img, index) => (
                   <div key={index} className="space-y-3">
                     <div

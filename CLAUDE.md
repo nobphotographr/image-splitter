@@ -1,7 +1,7 @@
 # Claude Code 指示書
 
 ## プロジェクト概要
-画像を4分割するWebツール（X/Twitter縦長投稿用）
+画像を2〜4分割するWebツール（X/Twitter連続投稿用）
 
 ## 技術スタック
 - Next.js 15 (App Router)
