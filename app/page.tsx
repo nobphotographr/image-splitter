@@ -494,7 +494,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="md:col-span-2">
+          <div className="md:col-span-3">
             <h2 className="mb-4 font-mono text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">Pieces</h2>
             <div className="grid grid-cols-3 border border-[var(--border)]">
               {[2, 3, 4].map((count) => (
@@ -503,7 +503,7 @@ export default function Home() {
                   type="button"
                   aria-pressed={splitCount === count}
                   onClick={() => setSplitCount(count as SplitCount)}
-                  className={`px-4 py-4 text-center text-sm font-medium transition-colors ${
+                  className={`min-w-0 whitespace-nowrap px-2 py-4 text-center text-sm font-medium transition-colors ${
                     splitCount === count
                       ? "bg-[var(--text)] text-[var(--bg)]"
                       : "text-[var(--text)] hover:bg-[var(--bg-subtle)]"
@@ -516,7 +516,7 @@ export default function Home() {
           </div>
 
           {splitMode === "carousel" && (
-            <div className="grid grid-cols-1 gap-6 md:col-span-5 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-6 md:col-span-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <span className="text-sm font-medium text-[var(--text)]">{text.photoUsage}</span>
                 <div className="mt-2 grid grid-cols-2 border border-[var(--border)]">
