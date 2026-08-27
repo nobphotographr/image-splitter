@@ -16,6 +16,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://tools.iruagaru.com"),
   title: "Image Slicer | iruagaru",
   description: "写真を回転し、つながった2〜4枚のカルーセル画像へ分割するツールです。",
+  alternates: { canonical: "/image-splitter/" },
   robots: {
     index: true,
     follow: true,
