@@ -3,6 +3,11 @@
 /* eslint-disable @next/next/no-img-element -- previews are client-generated data URLs */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  translations,
+  type ImageErrorKey,
+  type Language,
+} from "./translations";
 
 type SplitMode = "vertical" | "carousel";
 type AspectPreset = "3:4" | "4:5";
@@ -21,6 +26,7 @@ const getOutputMimeType = (mimeType: string) => {
 };
 
 export default function Home() {
+  const [language, setLanguage] = useState<Language>("ja");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [splitImages, setSplitImages] = useState<string[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -34,15 +40,48 @@ export default function Home() {
   const [sourceRatio, setSourceRatio] = useState(1);
   const [sourceIsPortrait, setSourceIsPortrait] = useState(false);
   const [allowNarrowPortrait, setAllowNarrowPortrait] = useState(false);
-  const [imageError, setImageError] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<ImageErrorKey | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const text = translations[language];
+
+  useEffect(() => {
+    let preferredLanguage: Language = navigator.language
+      .toLowerCase()
+      .startsWith("ja")
+      ? "ja"
+      : "en";
+
+    try {
+      const savedLanguage = localStorage.getItem(
+        "iruagaru-image-splitter-language"
+      );
+      if (savedLanguage === "ja" || savedLanguage === "en") {
+        preferredLanguage = savedLanguage;
+      }
+    } catch {
+      // The switch still works when storage is unavailable.
+    }
+
+    setLanguage(preferredLanguage);
+    document.documentElement.lang = preferredLanguage;
+  }, []);
+
+  const changeLanguage = (nextLanguage: Language) => {
+    setLanguage(nextLanguage);
+    document.documentElement.lang = nextLanguage;
+    try {
+      localStorage.setItem("iruagaru-image-splitter-language", nextLanguage);
+    } catch {
+      // Keep the current-session selection when storage is unavailable.
+    }
+  };
 
   const handleImageUpload = (file: File) => {
     setImageError(null);
     setAllowNarrowPortrait(false);
 
     if (!file.type.startsWith("image/")) {
-      setImageError("画像ファイルを選択してください。");
+      setImageError("invalid-file");
       return;
     }
 
@@ -54,7 +93,7 @@ export default function Home() {
     };
     reader.onerror = () => {
       setSelectedImage(null);
-      setImageError("画像ファイルを読み込めませんでした。別の画像をお試しください。");
+      setImageError("read-failed");
     };
     reader.readAsDataURL(file);
   };
@@ -209,16 +248,12 @@ export default function Home() {
         setImageError(null);
       } catch {
         setSplitImages([]);
-        setImageError(
-          "この画像はブラウザで処理できませんでした。PNGまたはJPGへ変換してからお試しください。"
-        );
+        setImageError("process-failed");
       }
     };
     img.onerror = () => {
       setSplitImages([]);
-      setImageError(
-        "この画像形式をブラウザで読み込めません。PNGまたはJPGへ変換してからお試しください。"
-      );
+      setImageError("decode-failed");
     };
     img.src = selectedImage;
   }, [
@@ -374,13 +409,35 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-[var(--bg)] px-4 py-8 sm:px-6 sm:py-12">
       <div className="mx-auto max-w-5xl">
-        <nav className="mb-24 flex items-center justify-between border-b border-[var(--border)] pb-4 font-mono text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">
+        <nav className="mb-24 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] pb-4 font-mono text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">
           <span>iruagaru / photo tool</span>
-          <span className="flex gap-4">
-            <a className="text-[var(--text)] underline decoration-[var(--border)] underline-offset-4" href="../">Preview ↗</a>
-            <a className="text-[var(--text)] underline decoration-[var(--border)] underline-offset-4" href="../image-composer/">Compose ↗</a>
-            <a className="text-[var(--text)] underline decoration-[var(--border)] underline-offset-4" href="../image-annotator/">Annotate ↗</a>
-          </span>
+          <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
+            <span
+              className="inline-flex border border-[var(--border)] tracking-normal"
+              role="group"
+              aria-label={text.languageLabel}
+            >
+              {(["ja", "en"] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  lang={option}
+                  aria-pressed={language === option}
+                  onClick={() => changeLanguage(option)}
+                  className={`px-2 py-1 transition-colors ${
+                    language === option
+                      ? "bg-[var(--text)] text-[var(--bg)]"
+                      : "text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]"
+                  }`}
+                >
+                  {option.toUpperCase()}
+                </button>
+              ))}
+            </span>
+            <a className="text-[var(--text)] underline decoration-[var(--border)] underline-offset-4" href="../">{text.toolsLink}</a>
+            <a className="text-[var(--text)] underline decoration-[var(--border)] underline-offset-4" href="../image-composer/">{text.composeLink}</a>
+            <a className="text-[var(--text)] underline decoration-[var(--border)] underline-offset-4" href="../image-annotator/">{text.annotateLink}</a>
+          </div>
         </nav>
 
         <header className="mb-24 grid gap-8 md:grid-cols-12 md:items-end">
@@ -391,7 +448,7 @@ export default function Home() {
             </h1>
           </div>
           <p className="max-w-prose text-sm leading-relaxed text-[var(--text-muted)] md:col-span-3">
-            1枚の写真を、つながった2〜4枚のカルーセルへ。処理はすべてこの端末の中で完結します。
+            {text.intro}
           </p>
         </header>
 
@@ -412,10 +469,10 @@ export default function Home() {
                 }`}
               >
                 <span className="block text-sm font-medium text-[var(--text)]">
-                  縦長を段分割
+                  {text.verticalMode}
                 </span>
                 <span className="mt-1 block text-xs text-[var(--text-muted)]">
-                  上から順に2〜4枚へ
+                  {text.verticalModeHelp}
                 </span>
               </button>
               <button
@@ -428,10 +485,10 @@ export default function Home() {
                 }`}
               >
                 <span className="block text-sm font-medium text-[var(--text)]">
-                  横長をカルーセル分割
+                  {text.carouselMode}
                 </span>
                 <span className="mt-1 block text-xs text-[var(--text-muted)]">
-                  つながった縦写真を左から順番に
+                  {text.carouselModeHelp}
                 </span>
               </button>
             </div>
@@ -452,7 +509,7 @@ export default function Home() {
                       : "text-[var(--text)] hover:bg-[var(--bg-subtle)]"
                   }`}
                 >
-                  {count}枚
+                  {text.pieces(count)}
                 </button>
               ))}
             </div>
@@ -461,7 +518,7 @@ export default function Home() {
           {splitMode === "carousel" && (
             <div className="grid grid-cols-1 gap-6 md:col-span-5 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <span className="text-sm font-medium text-[var(--text)]">写真の使い方</span>
+                <span className="text-sm font-medium text-[var(--text)]">{text.photoUsage}</span>
                 <div className="mt-2 grid grid-cols-2 border border-[var(--border)]">
                   <button
                     type="button"
@@ -473,8 +530,8 @@ export default function Home() {
                         : "text-[var(--text)] hover:bg-[var(--bg-subtle)]"
                     }`}
                   >
-                    全体を使う
-                    <small className="mt-1 block opacity-70">クロップなし</small>
+                    {text.useFull}
+                    <small className="mt-1 block opacity-70">{text.noCrop}</small>
                   </button>
                   <button
                     type="button"
@@ -486,8 +543,8 @@ export default function Home() {
                         : "text-[var(--text)] hover:bg-[var(--bg-subtle)]"
                     }`}
                   >
-                    比率を揃える
-                    <small className="mt-1 block opacity-70">上下をトリミング</small>
+                    {text.matchRatio}
+                    <small className="mt-1 block opacity-70">{text.cropVertical}</small>
                   </button>
                 </div>
               </div>
@@ -498,7 +555,7 @@ export default function Home() {
                       htmlFor="aspect-preset"
                       className="text-sm font-medium text-[var(--text)]"
                     >
-                      1枚あたりの比率
+                      {text.aspectLabel}
                     </label>
                     <select
                       id="aspect-preset"
@@ -508,8 +565,8 @@ export default function Home() {
                       }
                       className="mt-2 w-full border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--text)]"
                     >
-                      <option value="3:4">3:4（Xで見やすい縦長）</option>
-                      <option value="4:5">4:5（少し横幅広め）</option>
+                      <option value="3:4">{text.aspectThreeFour}</option>
+                      <option value="4:5">{text.aspectFourFive}</option>
                     </select>
                   </div>
                   <div>
@@ -517,7 +574,7 @@ export default function Home() {
                       htmlFor="focus-y"
                       className="flex items-center justify-between text-sm font-medium text-[var(--text)]"
                     >
-                      <span>上下位置</span>
+                      <span>{text.verticalPosition}</span>
                       <span className="text-xs text-[var(--text-muted)]">
                         {focusY}%
                       </span>
@@ -545,15 +602,15 @@ export default function Home() {
                 Rotate
               </h2>
               <p className="text-xs leading-relaxed text-[var(--text-muted)]">
-                縦画像を横向きにしてから分割できます
+                {text.rotateHelp}
               </p>
             </div>
             <div className="grid grid-cols-3 border border-[var(--border)] md:col-span-6">
               {(
                 [
-                  ["none", "そのまま", "↕"],
-                  ["left", "左へ90°", "↶"],
-                  ["right", "右へ90°", "↷"],
+                  ["none", text.rotationNone, "↕"],
+                  ["left", text.rotationLeft, "↶"],
+                  ["right", text.rotationRight, "↷"],
                 ] as const
               ).map(([value, label, icon]) => (
                 <button
@@ -575,11 +632,7 @@ export default function Home() {
               ))}
             </div>
             <p className="text-xs leading-relaxed text-[var(--text-muted)] md:col-span-3">
-              {rotationMode === "right"
-                ? "右回転でも、元画像の上側から1、2、3…の順に保存します"
-                : rotationMode === "left"
-                  ? "元画像の上側から1、2、3…の順に保存します"
-                  : "画像の向きは変更しません"}
+              {text.rotationDescription(rotationMode)}
             </p>
           </section>
         )}
@@ -614,9 +667,9 @@ export default function Home() {
                   htmlFor="file-upload"
                   className="cursor-pointer text-[var(--text)] underline underline-offset-4 decoration-[var(--border)] hover:decoration-[var(--text)]"
                 >
-                  ファイルを選択
+                  {text.chooseFile}
                 </label>
-                <span> またはドラッグ&ドロップ</span>
+                <span>{text.orDrop}</span>
                 <input
                   ref={fileInputRef}
                   id="file-upload"
@@ -629,17 +682,17 @@ export default function Home() {
                   }}
                 />
               </div>
-              <p className="text-sm text-[var(--text-muted)]">PNG, JPG など</p>
+              <p className="text-sm text-[var(--text-muted)]">{text.supportedFormats}</p>
               {imageError && (
                 <p role="alert" className="text-sm text-[var(--text)]">
-                  {imageError}
+                  {text.errors[imageError]}
                 </p>
               )}
               {splitMode === "carousel" && (
                 <p className="text-xs text-[var(--text-muted)]">
                   {cropMode === "full"
-                    ? `写真全体を残したまま、等幅の${splitCount}枚に分割します`
-                    : `固定比率で、連続した縦${splitCount}枚に切り出します`}
+                    ? text.fullSplitHelp(splitCount)
+                    : text.fixedSplitHelp(splitCount)}
                 </p>
               )}
             </div>
@@ -650,17 +703,17 @@ export default function Home() {
               Image error
             </p>
             <h2 className="mb-4 text-2xl font-medium text-[var(--text)]">
-              画像を読み込めませんでした
+              {text.imageErrorTitle}
             </h2>
             <p role="alert" className="max-w-prose text-sm leading-relaxed text-[var(--text-muted)]">
-              {imageError}
+              {text.errors[imageError]}
             </p>
             <button
               type="button"
               onClick={reset}
               className="mt-8 border border-[var(--border)] px-4 py-3 text-sm font-medium text-[var(--text)] hover:bg-[var(--bg-subtle)]"
             >
-              別の写真を選ぶ
+              {text.chooseAnother}
             </button>
           </section>
         ) : needsPortraitChoice ? (
@@ -670,12 +723,12 @@ export default function Home() {
                 Portrait image
               </p>
               <h2 className="text-2xl font-medium text-[var(--text)]">
-                縦写真の使い方を選んでください
+                {text.portraitChoiceTitle}
               </h2>
             </div>
             <div className="md:col-span-7">
               <p className="mb-6 max-w-prose text-sm leading-relaxed text-[var(--text-muted)]">
-                このまま横方向へ{splitCount}分割すると、1枚ずつがかなり細長くなります。写真を回転するか、固定比率で切り出すと見やすい形になります。
+                {text.portraitChoiceHelp(splitCount)}
               </p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <button
@@ -683,28 +736,28 @@ export default function Home() {
                   onClick={() => setRotationMode("left")}
                   className="border border-[var(--text)] bg-[var(--text)] px-4 py-3 text-left text-sm font-medium text-[var(--bg)]"
                 >
-                  左へ90°回転して分割
+                  {text.rotateLeftAction}
                 </button>
                 <button
                   type="button"
                   onClick={() => setRotationMode("right")}
                   className="border border-[var(--border)] px-4 py-3 text-left text-sm font-medium text-[var(--text)] hover:bg-[var(--bg-subtle)]"
                 >
-                  右へ90°回転して分割
+                  {text.rotateRightAction}
                 </button>
                 <button
                   type="button"
                   onClick={() => setCropMode("fixed")}
                   className="border border-[var(--border)] px-4 py-3 text-left text-sm font-medium text-[var(--text)] hover:bg-[var(--bg-subtle)]"
                 >
-                  {aspectPreset}に切り出して分割
+                  {text.fixedCropAction(aspectPreset)}
                 </button>
                 <button
                   type="button"
                   onClick={() => setAllowNarrowPortrait(true)}
                   className="border border-[var(--border)] px-4 py-3 text-left text-sm text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]"
                 >
-                  細長いまま分割する
+                  {text.keepNarrowAction}
                 </button>
               </div>
             </div>
@@ -715,14 +768,14 @@ export default function Home() {
               <div className="mb-8 flex items-end justify-between gap-4 border-b border-[var(--border)] pb-4">
                 <div>
                   <p className="mb-2 font-mono text-xs uppercase tracking-[0.14em] text-[var(--text-muted)]">Sequence / {splitCount}</p>
-                  <h2 className="text-2xl font-medium text-[var(--text)]">分割結果</h2>
+                  <h2 className="text-2xl font-medium text-[var(--text)]">{text.resultsTitle}</h2>
                 </div>
-                <button onClick={reset} className="text-sm text-[var(--text-muted)] underline decoration-[var(--border)] underline-offset-4">別の写真を選ぶ</button>
+                <button onClick={reset} className="text-sm text-[var(--text-muted)] underline decoration-[var(--border)] underline-offset-4">{text.chooseAnother}</button>
               </div>
               <p className="text-sm text-[var(--text-muted)] mb-6">
                 {splitMode === "carousel"
-                  ? "1から番号順に投稿してください"
-                  : "上から順番に投稿してください"}
+                  ? text.carouselOrder
+                  : text.verticalOrder}
               </p>
               {splitMode === "carousel" && (
                 <div
@@ -767,7 +820,7 @@ export default function Home() {
                     >
                       <img
                         src={img}
-                        alt={`分割 ${index + 1}`}
+                        alt={text.splitImageAlt(index + 1)}
                         className={`h-full w-full ${
                           isVeryNarrowPreview ? "object-contain" : "object-cover"
                         }`}
@@ -777,7 +830,7 @@ export default function Home() {
                       onClick={() => shareImage(img, index)}
                       className="w-full bg-[var(--text)] text-[var(--bg)] py-2 px-4 text-sm font-medium hover:opacity-80 transition-opacity"
                     >
-                      {index + 1}枚目を保存 / 共有
+                      {text.saveOne(index + 1)}
                     </button>
                   </div>
                 ))}
@@ -789,25 +842,22 @@ export default function Home() {
                 onClick={saveAllImages}
                 className="bg-[var(--text)] text-[var(--bg)] py-2 px-4 text-sm font-medium hover:opacity-80 transition-opacity"
               >
-                {splitCount}枚をまとめて保存 / 共有
+                {text.saveAll(splitCount)}
               </button>
             </div>
 
             <section className="border-t border-[var(--border)] pt-12">
               <h3 className="text-sm font-medium text-[var(--text)] mb-4">
-                iPhoneで写真アプリに保存する方法
+                {text.iphoneSaveTitle}
               </h3>
               <ol className="text-sm text-[var(--text-muted)] space-y-2">
-                <li>1. 「{splitCount}枚をまとめて保存 / 共有」をタップ</li>
-                <li>2. シェアシート（共有メニュー）が表示される</li>
-                <li>3. 「画像を保存」または「{splitCount}枚の画像を保存」をタップ</li>
-                <li>
-                  4. {splitMode === "carousel" ? "1から番号順" : "上から順番"}にXへ追加
-                </li>
+                <li>{text.iphoneStepOne(splitCount)}</li>
+                <li>{text.iphoneStepTwo}</li>
+                <li>{text.iphoneStepThree(splitCount)}</li>
+                <li>{text.iphoneStepFour(splitMode === "carousel")}</li>
               </ol>
               <p className="text-xs text-[var(--text-muted)] mt-4">
-                保存項目が見つからない場合は、シェアシートを下へスクロールしてください。
-                1枚ずつ保存することもできます。
+                {text.iphoneSaveNote}
               </p>
             </section>
           </div>
@@ -815,7 +865,7 @@ export default function Home() {
 
         <footer className="mt-24 pt-8 border-t border-[var(--border)]">
           <p className="text-sm text-[var(--text-muted)]">
-            データはブラウザ上でのみ処理され、サーバーには保存されません
+            {text.privacy}
           </p>
         </footer>
       </div>
