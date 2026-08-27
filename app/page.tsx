@@ -414,7 +414,10 @@ export default function Home() {
         <nav className="mb-24 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] pb-4 font-mono text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">
           <span>iruagaru / photo tool</span>
           <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
-            <label className="relative inline-flex items-center border border-[var(--border)] px-2 py-1 tracking-normal text-[var(--text)]">
+            <label className="relative inline-flex items-center whitespace-nowrap border border-[var(--border)] px-2 py-1 text-[var(--text)]">
+              <span aria-hidden="true" className="mr-1.5 tracking-[0.12em] text-[var(--text-muted)]">
+                Language /
+              </span>
               <span className="sr-only">{text.languageLabel}</span>
               <select
                 aria-label={text.languageLabel}
@@ -422,7 +425,7 @@ export default function Home() {
                 onChange={(event) =>
                   changeLanguage(event.target.value as Language)
                 }
-                className="max-w-28 cursor-pointer appearance-none bg-transparent pr-4 text-xs outline-none"
+                className="max-w-28 cursor-pointer appearance-none bg-transparent pr-4 text-xs normal-case tracking-normal outline-none"
               >
                 {languageOptions.map((option) => (
                   <option key={option.value} value={option.value} lang={option.value}>
