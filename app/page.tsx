@@ -4,6 +4,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  isLanguage,
+  languageOptions,
+  resolveBrowserLanguage,
   translations,
   type ImageErrorKey,
   type Language,
@@ -45,17 +48,16 @@ export default function Home() {
   const text = translations[language];
 
   useEffect(() => {
-    let preferredLanguage: Language = navigator.language
-      .toLowerCase()
-      .startsWith("ja")
-      ? "ja"
-      : "en";
+    const browserLanguages = navigator.languages?.length
+      ? navigator.languages
+      : [navigator.language];
+    let preferredLanguage = resolveBrowserLanguage(browserLanguages);
 
     try {
       const savedLanguage = localStorage.getItem(
         "iruagaru-image-splitter-language"
       );
-      if (savedLanguage === "ja" || savedLanguage === "en") {
+      if (isLanguage(savedLanguage)) {
         preferredLanguage = savedLanguage;
       }
     } catch {
@@ -412,28 +414,26 @@ export default function Home() {
         <nav className="mb-24 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--border)] pb-4 font-mono text-xs uppercase tracking-[0.16em] text-[var(--text-muted)]">
           <span>iruagaru / photo tool</span>
           <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
-            <span
-              className="inline-flex border border-[var(--border)] tracking-normal"
-              role="group"
-              aria-label={text.languageLabel}
-            >
-              {(["ja", "en"] as const).map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  lang={option}
-                  aria-pressed={language === option}
-                  onClick={() => changeLanguage(option)}
-                  className={`px-2 py-1 transition-colors ${
-                    language === option
-                      ? "bg-[var(--text)] text-[var(--bg)]"
-                      : "text-[var(--text-muted)] hover:bg-[var(--bg-subtle)]"
-                  }`}
-                >
-                  {option.toUpperCase()}
-                </button>
-              ))}
-            </span>
+            <label className="relative inline-flex items-center border border-[var(--border)] px-2 py-1 tracking-normal text-[var(--text)]">
+              <span className="sr-only">{text.languageLabel}</span>
+              <select
+                aria-label={text.languageLabel}
+                value={language}
+                onChange={(event) =>
+                  changeLanguage(event.target.value as Language)
+                }
+                className="max-w-28 cursor-pointer appearance-none bg-transparent pr-4 text-xs outline-none"
+              >
+                {languageOptions.map((option) => (
+                  <option key={option.value} value={option.value} lang={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <span aria-hidden="true" className="pointer-events-none absolute right-2">
+                ▾
+              </span>
+            </label>
             <a className="text-[var(--text)] underline decoration-[var(--border)] underline-offset-4" href="../">{text.toolsLink}</a>
             <a className="text-[var(--text)] underline decoration-[var(--border)] underline-offset-4" href="../image-composer/">{text.composeLink}</a>
             <a className="text-[var(--text)] underline decoration-[var(--border)] underline-offset-4" href="../image-annotator/">{text.annotateLink}</a>
