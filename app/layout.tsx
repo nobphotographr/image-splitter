@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://tools.iruagaru.com"),
-  title: "Image Slicer | iruagaru",
-  description: "写真を回転し、つながった2〜4枚のカルーセル画像へ分割するツールです。",
+  title: "Image Splitter – 写真を2〜4枚のカルーセル画像に分割 | iruagaru",
+  description: "1枚の写真を、SNSへ投稿しやすい2〜4枚のつながったカルーセル画像に分割。画像はアップロードせず、ブラウザ内だけで処理します。",
   alternates: { canonical: "/image-splitter/" },
   robots: {
     index: true,
@@ -23,8 +23,8 @@ export const metadata: Metadata = {
     googleBot: { index: true, follow: true, "max-image-preview": "large" },
   },
   openGraph: {
-    title: "Image Slicer | iruagaru",
-    description: "写真を左右へ90度回転し、つながった2〜4枚のカルーセル画像へ分割します。",
+    title: "Image Splitter – 写真を2〜4枚のカルーセル画像に分割 | iruagaru",
+    description: "1枚の写真を、SNSへ投稿しやすい2〜4枚のつながったカルーセル画像に分割。画像はブラウザ内だけで処理します。",
     url: "https://tools.iruagaru.com/image-splitter/",
     siteName: "iruagaru photo tools",
     images: [
@@ -41,8 +41,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Image Slicer | iruagaru",
-    description: "写真を左右へ90度回転し、つながった2〜4枚のカルーセル画像へ分割します。",
+    title: "Image Splitter – 写真を2〜4枚のカルーセル画像に分割 | iruagaru",
+    description: "1枚の写真を、SNSへ投稿しやすい2〜4枚のつながったカルーセル画像に分割。画像はブラウザ内だけで処理します。",
     images: ["https://tools.iruagaru.com/image-splitter/og.png?v=20260814-2"],
   },
 };

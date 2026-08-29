@@ -445,7 +445,7 @@ export default function Home() {
 
         <header className="mb-24 grid gap-8 md:grid-cols-12 md:items-end">
           <div className="md:col-span-9">
-            <p className="mb-6 font-mono text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">Image slicer / 01</p>
+            <p className="mb-6 font-mono text-xs uppercase tracking-[0.18em] text-[var(--text-muted)]">Image splitter / 01</p>
             <h1 className="text-5xl font-semibold leading-[0.92] tracking-[-0.06em] text-[var(--text)] sm:text-7xl md:text-8xl">
               Slice one image<br />into a sequence.
             </h1>

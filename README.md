@@ -1,4 +1,4 @@
-# Image Slicer
+# Image Splitter
 
 1枚の画像を、XなどのSNSへ投稿しやすい2〜4枚の連続画像に分割するWebアプリです。
 
